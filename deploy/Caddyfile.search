@@ -1,0 +1,11 @@
+{$SEARCH_HOSTNAME} {
+  @authorized header Authorization "Bearer {$SEARCH_API_KEY}"
+  handle @authorized {
+    reverse_proxy search:8080 {
+      header_up -Authorization
+    }
+  }
+  handle {
+    respond "Unauthorized" 401
+  }
+}

@@ -1,0 +1,58 @@
+name: happy-planner-tests
+services:
+  db:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    environment:
+      POSTGRES_USER: planner
+      POSTGRES_PASSWORD: planner_test_only
+      POSTGRES_DB: happy_planner_test
+    ports: ["127.0.0.1:5433:5432"]
+    tmpfs: ["/var/lib/postgresql/data"]
+    volumes:
+      [
+        "./tests/support/auth-schema.sql:/docker-entrypoint-initdb.d/001-auth.sql:ro",
+      ]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U planner -d happy_planner_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  auth:
+    image: supabase/gotrue@sha256:c485010238ab429edf4ac8eb70b37b41aae0a0905277a935d4a0b64bb848e393
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: http://127.0.0.1:9998/auth/v1
+      GOTRUE_SITE_URL: http://127.0.0.1:3100
+      GOTRUE_URI_ALLOW_LIST: http://127.0.0.1:3100/auth/callback
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://planner:planner_test_only@db:5432/happy_planner_test?search_path=auth
+      GOTRUE_JWT_SECRET: test-only-secret-never-use-in-production-12345
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "false"
+      GOTRUE_SMTP_HOST: mail
+      GOTRUE_SMTP_PORT: 1025
+      GOTRUE_SMTP_ADMIN_EMAIL: hello@planner.test
+      GOTRUE_SMTP_SENDER_NAME: Happy Planner Test
+      GOTRUE_SMTP_MAX_FREQUENCY: 1s
+      GOTRUE_RATE_LIMIT_EMAIL_SENT: 100
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_RECOVERY: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_INVITE: /auth/v1/verify
+  gateway:
+    image: caddy@sha256:d44355d3c2149dc580ce2cac735955d1c08d3d00882c30489c241aa51a5c10d9
+    ports: ["127.0.0.1:9998:80"]
+    environment:
+      NO_PROXY: auth,localhost,127.0.0.1
+    volumes: ["./tests/support/Caddyfile:/etc/caddy/Caddyfile:ro"]
+    depends_on: [auth]
+  mail:
+    image: axllent/mailpit@sha256:b68349e3a014b90c5610bfb26b2ae36f3892d7b8cf25ee140c6c71c98d2fcf48
+    ports: ["127.0.0.1:8025:8025"]

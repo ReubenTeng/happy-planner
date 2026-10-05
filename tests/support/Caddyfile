@@ -1,0 +1,6 @@
+:80 {
+  handle_path /auth/v1/* {
+    reverse_proxy auth:9999
+  }
+  respond 404
+}
