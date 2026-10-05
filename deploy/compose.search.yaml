@@ -1,0 +1,24 @@
+services:
+  search:
+    image: searxng/searxng@sha256:76b0bf285aca014c7191fc4d9234c4bfb358624ac33d8883833d496c059ec072
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?required}
+    volumes: ["./searxng-settings.yml:/etc/searxng/settings.yml:ro"]
+    restart: unless-stopped
+  gateway:
+    image: caddy@sha256:d44355d3c2149dc580ce2cac735955d1c08d3d00882c30489c241aa51a5c10d9
+    environment:
+      SEARCH_HOSTNAME: ${SEARCH_HOSTNAME:?required}
+      SEARCH_API_KEY: ${SEARCH_API_KEY:?required}
+      NO_PROXY: search,localhost,127.0.0.1
+    ports: ["80:80", "443:443"]
+    volumes:
+      [
+        "./Caddyfile.search:/etc/caddy/Caddyfile:ro",
+        "caddy-data:/data",
+        "caddy-config:/config",
+      ]
+    restart: unless-stopped
+volumes:
+  caddy-data:
+  caddy-config:

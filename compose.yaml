@@ -1,0 +1,24 @@
+services:
+  search:
+    image: searxng/searxng@sha256:76b0bf285aca014c7191fc4d9234c4bfb358624ac33d8883833d496c059ec072
+    ports: ["127.0.0.1:8080:8080"]
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?Set SEARXNG_SECRET in .env.local}
+    volumes:
+      - ./deploy/searxng-settings.yml:/etc/searxng/settings.yml:ro
+    restart: unless-stopped
+  db:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    environment:
+      POSTGRES_USER: planner
+      POSTGRES_PASSWORD: planner_local_only
+      POSTGRES_DB: planner
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["planner-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U planner -d planner"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  planner-data:

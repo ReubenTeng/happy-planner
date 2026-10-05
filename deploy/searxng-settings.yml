@@ -1,0 +1,23 @@
+use_default_settings:
+  engines:
+    keep_only: [google, bing, duckduckgo]
+general:
+  instance_name: Happy Planner Search
+search:
+  formats: [json]
+  safe_search: 1
+server:
+  limiter: false
+  public_instance: false
+  image_proxy: false
+outgoing:
+  verify: /etc/ssl/certs/ca-certificates.crt
+  request_timeout: 12.0
+  max_request_timeout: 20.0
+engines:
+  - name: google
+    disabled: false
+  - name: bing
+    disabled: false
+  - name: duckduckgo
+    disabled: false
